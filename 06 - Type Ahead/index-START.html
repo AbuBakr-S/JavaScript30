@@ -7,6 +7,10 @@
 </head>
 <body>
 
+  <button id = "find-me">Show my location</button><br/>
+  <p id = "status"></p>
+  <a id = "map-link" target="_blank"></a>
+
   <form class="search-form">
     <input type="text" class="search" placeholder="City or State">
     <ul class="suggestions">
@@ -16,6 +20,125 @@
   </form>
 <script>
 const endpoint = 'https://gist.githubusercontent.com/Miserlou/c5cd8364bf9b2420bb29/raw/2bf258763cdddd704f8ffd3ea9a3e81d25e2c6f6/cities.json';
+
+const cities = []
+
+fetch(endpoint)   // returns a promise
+  // data returned from fetch is a blob of raw data which needs to be converted into JSON (.json() is a method on the returned promise)
+  .then(blob => blob.json())  
+  // blob.json() returns another promise which contains the raw data as JSON
+  .then(data => cities.push(...data))   // spread the data into the cities array
+  console.log(cities)
+
+const findMatches = (wordToMatch, cities) => {
+  return cities.filter(place => {
+    const regex = new RegExp(wordToMatch, 'gi')
+    return place.city.match(regex) || place.state.match(regex)
+  })
+}
+
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
+function displayMatches() {
+  const matchArray = findMatches(this.value, cities)
+  const html = matchArray.map(place => {
+    const regex = new RegExp(this.value, 'gi')
+    const cityName = place.city.replace(regex, `<span class="hl">${this.value}</span>`)
+    const stateName = place.state.replace(regex, `<span class="hl">${this.value}</span>`)
+    return `
+      <li>
+        <span class="name">${cityName}, ${stateName}</span>
+        <span class="population">${numberWithCommas(place.population)}</span>
+      </li>
+    `
+  }).join('')
+  suggestions.innerHTML = html
+}
+
+const searchInput = document.querySelector('.search')
+const suggestions = document.querySelector('.suggestions')
+
+searchInput.addEventListener('keyup', displayMatches)
+
+
+
+// ##### ADD SEARCH BY NEAREST FUNCTIONALITY - GEOLOCATION #####
+function findNearest(lat1, lon1, cities) {
+  console.log(lat1, lon1)
+  suggestions.innerHTML = ''
+  cities.filter(place => {
+    const result = distance(lat1, lon1, place.latitude, place.longitude) < 3275  // distance in miles is less than 3275miles from current location
+    if (result) {
+      console.log(result)
+      suggestions.innerHTML += `
+        <li>
+          <span class="name">${place.city}, ${place.state}</span>
+          <span class="population">${numberWithCommas(place.population)}</span>
+        </li>
+      `
+    }
+  })
+}
+
+
+// using the Geolocation API
+function geoFindMe() {
+
+  const status = document.querySelector('#status');
+  const mapLink = document.querySelector('#map-link');
+
+  mapLink.href = '';
+  mapLink.textContent = '';
+
+  function success(position) {
+    const latitude  = position.coords.latitude;
+    const longitude = position.coords.longitude;
+
+    status.textContent = '';
+    mapLink.href = `https://www.openstreetmap.org/#map=18/${latitude}/${longitude}`;
+    mapLink.textContent = `Latitude: ${latitude} °, Longitude: ${longitude} °`;
+
+    // pass your location to filter
+    findNearest(latitude, longitude, cities)
+  }
+
+  function error() {
+    status.textContent = 'Unable to retrieve your location';
+  }
+
+  if(!navigator.geolocation) {
+    status.textContent = 'Geolocation is not supported by your browser';
+  } else {
+    status.textContent = 'Locating…';
+    navigator.geolocation.getCurrentPosition(success, error);
+  }
+
+}
+
+document.querySelector('#find-me').addEventListener('click', geoFindMe);
+
+
+// compare two geolocations by co-ordinates
+function distance(lat1, lon1, lat2, lon2, unit) {
+  var radlat1 = Math.PI * lat1/180
+  var radlat2 = Math.PI * lat2/180
+  var theta = lon1-lon2
+  var radtheta = Math.PI * theta/180
+  var dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+  if (dist > 1) {
+      dist = 1;
+  }
+  dist = Math.acos(dist)
+  dist = dist * 180/Math.PI
+  dist = dist * 60 * 1.1515
+  if (unit=="K") { dist = dist * 1.609344 }
+  if (unit=="N") { dist = dist * 0.8684 }
+  return dist
+}
+
+
 
 </script>
 </body>
