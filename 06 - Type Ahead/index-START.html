@@ -66,12 +66,10 @@ searchInput.addEventListener('keyup', displayMatches)
 
 // ##### ADD SEARCH BY NEAREST FUNCTIONALITY - GEOLOCATION #####
 function findNearest(lat1, lon1, cities) {
-  console.log(lat1, lon1)
   suggestions.innerHTML = ''
   cities.filter(place => {
-    const result = distance(lat1, lon1, place.latitude, place.longitude) < 3275  // distance in miles is less than 3275miles from current location
-    if (result) {
-      console.log(result)
+    // distance in miles is less than 3275miles from current location
+    if (distance(lat1, lon1, place.latitude, place.longitude) < 3275) {
       suggestions.innerHTML += `
         <li>
           <span class="name">${place.city}, ${place.state}</span>
