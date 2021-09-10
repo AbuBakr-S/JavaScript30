@@ -7,6 +7,69 @@
 <body>
 <canvas id="draw" width="800" height="800"></canvas>
 <script>
+  const canvas = document.querySelector('#draw')
+  const ctx = canvas.getContext('2d')   // context to draw on
+  canvas.width = window.innerWidth
+  canvas.height = window.innerHeight
+  ctx.strokeStyle = '#BADA55'
+  ctx.lineJoin = 'round'    // rounded bottom
+  ctx.lineCap = 'round'   // rounded tip
+  ctx.lineWidth = 100
+  ctx.globalCompositeOperation = 'multiply'   // blend modes
+  
+  let isDrawing = false   // flag
+  // coordinates of start position
+  let lastX = 0
+  let lastY = 0
+  let hue = 0
+  let direction = true
+  
+  function draw(e) {
+    if (!isDrawing) return    // stop function when not mousedown
+    console.log(e)
+    ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`  // color, intensity, lightness
+    ctx.beginPath();
+    // start from
+    ctx.moveTo(lastX, lastY)
+    // go to 
+    ctx.lineTo(e.offsetX, e.offsetY)    // draw a line to 
+    ctx.stroke()
+    // update line start positions for continuity
+    // [lastX, lastY] = [e.offsetX, e.offsetY]    // array destructure
+    lastX = e.offsetX
+    lastY = e.offsetY
+
+    hue++
+    if (hue >= 360) {
+      hue = 0
+    }
+
+    // increment from 0 - 100, then 100 - 0
+    if (ctx.lineWidth >= 100 || ctx.lineWidth <= 1) {
+      direction = !direction
+    }
+
+    // grows and shrinks in sequence
+    if (direction) {
+      ctx.lineWidth++
+    } else {
+      ctx.lineWidth--
+    }
+
+  }
+
+  canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true
+    // before we move our mouse, update the line start position to the new mousedown location
+    lastX = e.offsetX
+    lastY = e.offsetY
+  })
+
+  // set isDrawing flag states
+  canvas.addEventListener('mousemove', draw)
+  canvas.addEventListener('mouseup', () => isDrawing = false)
+  canvas.addEventListener('mouseout', () => isDrawing = false)
+
 </script>
 
 <style>
